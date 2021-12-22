@@ -1,7 +1,7 @@
 import json
 import mariadb
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 import cfg
 
@@ -9,10 +9,11 @@ import cfg
 tothLength = 92
 defaultCart = "200043"
 scheduleApiUrl = "https://upload.cambridge105.co.uk/ScheduleApi"
-dateStr = datetime.now().strftime("%Y-%m-%d")
-today = date.today()
-midnight = datetime.combine(today, datetime.min.time())
-unix_ms_midnight = (midnight.timestamp() * 1000)
+dateToday = date.today()
+dateTomorrow = dateToday + timedelta(days=1)
+dateStr = dateTomorrow.strftime("%Y-%m-%d")
+midnightTomorrow = datetime.combine(dateTomorrow, datetime.min.time())
+unix_ms_midnight = (midnightTomorrow.timestamp() * 1000)
 # Connect to MariaDB Platform
 try:
     conn = mariadb.connect(
@@ -40,7 +41,7 @@ def jsonToSchedule(jsonObj):
   print("ScheduleItems=" + str(numScheduleItems))
   scheduleObj = {}
   for i in range(numScheduleItems):
-    # only get schedule items today
+    # only get schedule items tomorrow
     if (jsonObj[i]['StartTime'][0:10] == dateStr):
       scheduleTripleStr = jsonObj[i]['PID']
       if (i+1 < numScheduleItems):
