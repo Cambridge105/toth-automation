@@ -4,6 +4,7 @@ import sys
 from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 import cfg
+import dateutil.parser
 
 # Config
 tothLength = 92
@@ -53,7 +54,7 @@ def jsonToSchedule(jsonObj):
   return scheduleObj
 
 def convertDateTimeToMsSinceMidnight(dt_str):
-  dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+  dt = dateutil.parser.isoparse(dt_str)
   unix = dt.timestamp() * 1000
   return int(unix - unix_ms_midnight - (tothLength*1000))
 
