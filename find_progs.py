@@ -1,9 +1,12 @@
 import json
 import mariadb
 import sys
-from datetime import date, datetime, timedelta
+import time
+from datetime import date, datetime, timedelta, timezone
 from urllib.request import urlopen
 import cfg
+import dateutil.parser
+import pytz
 
 # Config
 tothLength = 92
@@ -12,8 +15,9 @@ scheduleApiUrl = "https://upload.cambridge105.co.uk/ScheduleApi"
 dateToday = date.today()
 dateTomorrow = dateToday + timedelta(days=1)
 dateStr = dateTomorrow.strftime("%Y-%m-%d")
-midnightTomorrow = datetime.combine(dateTomorrow, datetime.min.time())
+midnightTomorrow = datetime.combine(dateTomorrow, datetime.min.time()).astimezone(pytz.utc)
 unix_ms_midnight = (midnightTomorrow.timestamp() * 1000)
+
 # Connect to MariaDB Platform
 try:
     conn = mariadb.connect(
@@ -53,9 +57,15 @@ def jsonToSchedule(jsonObj):
   return scheduleObj
 
 def convertDateTimeToMsSinceMidnight(dt_str):
-  dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-  unix = dt.timestamp() * 1000
-  return int(unix - unix_ms_midnight - (tothLength*1000))
+  tz_London = pytz.timezone('Europe/London')
+  dt = dateutil.parser.isoparse(dt_str)
+  print (dt)
+  dt_3am =  datetime(dt.year, dt.month, dt.day, 3, 0, 0) # We use 3am because of clocks going back
+  dt_3am_aware = tz_London.localize(dt_3am)
+  dt_delta = dt - dt_3am_aware
+  dt_since_midnight = dt_delta + timedelta(hours=3)
+  msecs_since_midnight = dt_since_midnight.total_seconds() * 1000
+  return int(msecs_since_midnight - (tothLength*1000))
 
 def getCartNumberForPromo(title):
   sqlq = "SELECT NUMBER FROM CART WHERE GROUP_NAME='TOTHPROMO' AND TITLE LIKE '" + title + "' LIMIT 1;"
@@ -70,7 +80,6 @@ def getCartNumberForPromo(title):
 
 def overwriteToth(cartNumber,progTime):
   sqlQuery = "UPDATE LOG_LINES SET CART_NUMBER='" + str(cartNumber) + "'  WHERE LOG_NAME='" + dateStr + "-TOTH' AND START_TIME='" + str(progTime) + "' AND CART_NUMBER='" + defaultCart + "' LIMIT 1;"
-  print(sqlQuery)
   affected_rows = cur.execute(sqlQuery)
   if affected_rows is None:
     return False
