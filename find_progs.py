@@ -47,11 +47,11 @@ def jsonToSchedule(jsonObj):
   for i in range(numScheduleItems):
     # only get schedule items tomorrow
     if (jsonObj[i]['StartTime'][0:10] == dateStr):
-      scheduleTripleStr = jsonObj[i]['PID']
+      scheduleTripleStr = str(jsonObj[i]['PID'] or '')
       if (i+1 < numScheduleItems):
-        scheduleTripleStr += "|" + jsonObj[(i+1)]['PID']
+        scheduleTripleStr += "|" + str(jsonObj[(i+1)]['PID'] or '')
         if (i+2) < numScheduleItems:
-          scheduleTripleStr += "|" + jsonObj[(i+2)]['PID']
+          scheduleTripleStr += "|" + str(jsonObj[(i+2)]['PID'] or '')
       ms_since_midnight = convertDateTimeToMsSinceMidnight(jsonObj[i]['StartTime'])
       scheduleObj[ms_since_midnight] = scheduleTripleStr
   return scheduleObj
